@@ -1,0 +1,142 @@
+/* ============================================================
+   Al-Islah Mosque — Colors & Type Foundations
+   Brand: Masjid Al-Islah, Punggol, Singapore
+   Typeface: Poppins (Google Fonts)
+   ------------------------------------------------------------
+   NOTE: Poppins is loaded from Google Fonts CDN below. For
+   production / offline use, self-host the .woff2 files into
+   /fonts and swap the @import for @font-face rules.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
+
+:root {
+  /* ---- Brand core palette (warm gold-brown — Al-Islah sandstone) ---- */
+  --coral:        #B07A33;  /* primary — gold-brown, buttons & key accents */
+  --coral-600:    #8E5F22;  /* hover / pressed */
+  --coral-300:    #DCBC83;  /* tint */
+  --coral-100:    #F3E8D3;  /* wash / surface */
+
+  --mint:         #7E8F53;  /* secondary — earthy sage/olive, supportive accents */
+  --mint-600:     #5F7239;
+  --mint-100:     #E9EDDA;
+
+  --pink:         #B5613C;  /* accent — warm terracotta/clay; links, highlights */
+  --pink-600:     #97492A;
+  --pink-100:     #F6E2D6;
+
+  /* ---- Neutrals (warm brown-leaning ramp) ---- */
+  --ink:          #2C2620;  /* primary text on light — warm near-black brown */
+  --slate-700:    #4D453B;  /* body text */
+  --slate-500:    #837868;  /* secondary text */
+  --slate-300:    #CDC4B6;  /* borders, dividers */
+  --slate-100:    #EFEADF;  /* hairlines, subtle fills */
+  --paper:        #FAF7F0;  /* warm cream off-white surface */
+  --white:        #FFFFFF;
+
+  /* ---- Semantic ---- */
+  --bg:           var(--white);
+  --bg-alt:       var(--paper);
+  --fg1:          var(--ink);     /* headings, high-emphasis */
+  --fg2:          var(--slate-700); /* body */
+  --fg3:          var(--slate-500); /* muted / captions */
+  --primary:      var(--coral);
+  --primary-fg:   var(--white);
+  --link:         var(--pink);
+  --link-hover:   var(--pink-600);
+  --border:       var(--slate-300);
+  --hairline:     var(--slate-100);
+  --success:      var(--mint-600);
+  --overlay:      rgba(44,38,32,.55); /* image overlay (uk-overlay-primary equiv) */
+
+  /* ---- Type families ---- */
+  --font-sans: "Poppins", "Helvetica Neue", Arial, sans-serif;
+  --font-body: var(--font-sans);
+  --font-head: var(--font-sans);
+
+  /* ---- Type scale (Poppins) ---- */
+  --fs-display: 56px;   /* hero */
+  --fs-h1:      40px;
+  --fs-h2:      32px;
+  --fs-h3:      24px;
+  --fs-h4:      20px;
+  --fs-lead:    18px;
+  --fs-body:    16px;
+  --fs-small:   14px;
+  --fs-caption: 12px;
+
+  --lh-tight:   1.15;
+  --lh-snug:    1.3;
+  --lh-body:    1.65;
+
+  --fw-light:   300;
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-semibold:600;
+  --fw-bold:    700;
+
+  --tracking-caps: .08em;
+
+  /* ---- Spacing (base unit 4px) ---- */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px;
+  --sp-12: 48px; --sp-16: 64px; --sp-20: 80px; --sp-24: 96px;
+
+  /* ---- Radii ---- */
+  --r-sm:   4px;   /* default brand radius */
+  --r-md:   8px;
+  --r-lg:   16px;
+  --r-pill: 999px; /* uk-border-pill — banners, chips, buttons */
+  --r-circle: 50%;
+
+  /* ---- Shadows ---- */
+  --shadow-sm: 0 1px 2px rgba(42,42,46,.06), 0 1px 3px rgba(42,42,46,.08);
+  --shadow-md: 0 6px 18px rgba(42,42,46,.10);          /* uk-box-shadow-medium */
+  --shadow-lg: 0 16px 40px rgba(42,42,46,.16);
+  --shadow-hover: 0 2px 8px rgba(42,42,46,.10);        /* uk-box-shadow-hover-small */
+}
+
+/* ============================================================
+   Base element styles — apply with the .alislah scope or
+   globally. Use these as the semantic layer.
+   ============================================================ */
+
+.alislah, body.alislah {
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--fg2);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.alislah h1, .alislah h2, .alislah h3, .alislah h4 {
+  font-family: var(--font-head);
+  color: var(--fg1);
+  line-height: var(--lh-tight);
+  margin: 0 0 .5em;
+  font-weight: var(--fw-semibold);
+  text-wrap: balance;
+}
+.alislah h1 { font-size: var(--fs-h1); }
+.alislah h2 { font-size: var(--fs-h2); }
+.alislah h3 { font-size: var(--fs-h3); }
+.alislah h4 { font-size: var(--fs-h4); }
+
+.alislah p { margin: 0 0 1em; text-wrap: pretty; }
+.alislah a { color: var(--link); text-decoration: none; transition: color .15s ease; }
+.alislah a:hover { color: var(--link-hover); }
+
+/* Section heading label — the site uses centered, bold, all-caps
+   words inside blockquotes (VISION / MISSION / CORE VALUES) */
+.alislah .eyebrow,
+.alislah .section-label {
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--fg1);
+}
+
+.alislah em, .alislah i { font-style: italic; color: var(--fg2); }
