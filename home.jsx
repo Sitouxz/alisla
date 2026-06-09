@@ -34,7 +34,7 @@ function ValueCards() {
 
 function EventCard({ ev }) {
   return (
-    <a className="card card-hover" href={'#/dakwah/events/' + ev.id} style={{ display: 'block' }}>
+    <a className="card card-hover" href={'/dakwah/events/' + ev.id} onClick={(e) => navTo('/dakwah/events/' + ev.id, e)} style={{ display: 'block' }}>
       <div className="arch-sm" style={{ borderRadius: 0 }}><div className="media-4x3"><Img id={ev.img} ph={ev.title} /></div></div>
       <div className="card-body">
         <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
@@ -50,9 +50,42 @@ function EventCard({ ev }) {
   );
 }
 
+function AnnouncementBanner() {
+  const [posts, setPosts] = React.useState(null);
+  const [dismissed, setDismissed] = React.useState(() => sessionStorage.getItem('ann-dismissed') === '1');
+  React.useEffect(() => {
+    fetch('https://ne-website-manager.vercel.app/api/client/al-islah/posts?category=Announcement&limit=1')
+      .then(r => r.ok ? r.json() : [])
+      .then(d => setPosts(Array.isArray(d) ? d : []))
+      .catch(() => setPosts([]));
+  }, []);
+  const ann = posts && posts[0];
+  if (dismissed || !ann) return null;
+  return (
+    <div style={{ background: 'var(--coral)', color: '#fff', padding: '10px 0' }}>
+      <div className="container" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <Icon name="sparkles" size={16} style={{ flexShrink: 0 }} />
+        <span style={{ flex: 1, fontSize: 'var(--fs-small)', fontWeight: 500 }}>{ann.title}</span>
+        {ann.slug && (
+          <a href={'/learn/articles/' + ann.slug} onClick={(e) => navTo('/learn/articles/' + ann.slug, e)}
+            style={{ color: '#fff', fontWeight: 700, fontSize: 'var(--fs-small)', whiteSpace: 'nowrap', textDecoration: 'underline' }}>
+            Read more →
+          </a>
+        )}
+        <button onClick={() => { setDismissed(true); sessionStorage.setItem('ann-dismissed', '1'); }}
+          style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 4, display: 'grid', placeItems: 'center', opacity: 0.8, flexShrink: 0 }}
+          aria-label="Dismiss">
+          <Icon name="x" size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Home() {
   return (
     <React.Fragment>
+      <AnnouncementBanner />
       {/* Hero */}
       <section className="hero section-tight">
         <div className="container">
@@ -61,6 +94,7 @@ function Home() {
               <Eyebrow>Masjid Al-Islah · Punggol</Eyebrow>
               <h1>A home for the <span className="accent">Punggol</span> Muslim community.</h1>
               <p className="hero-lead">Since 2015, Al-Islah Mosque has been a place of worship, learning and belonging — fostering a dynamic and inclusive community that emanates blessings to all.</p>
+              <p style={{ color: 'var(--fg3)', fontSize: 'var(--fs-small)', marginTop: -12, marginBottom: 8, fontStyle: 'italic' }}>Sejak 2015, Masjid Al-Islah menjadi tempat ibadah, pembelajaran dan kebersamaan bagi komuniti Muslim Punggol.</p>
               <div className="hero-cta">
                 <Btn to="/donations" icon="heart">Support our mosque</Btn>
                 <Btn to="/about" variant="outline" iconRight="arrow-right">About Al-Islah</Btn>
@@ -86,12 +120,12 @@ function Home() {
 
       {/* Infaq banner */}
       <section className="container" style={{ marginTop: 8, marginBottom: 8 }}>
-        <a className="infaq-banner" href="#/donations">
+        <a className="infaq-banner" href="/donations" onClick={(e) => navTo('/donations', e)}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
             <Icon name="sparkles" size={30} />
             <div>
               <div className="if-title">Infaq for Al-Islah</div>
-              <div className="if-sub">Support the upkeep, programmes and outreach of your mosque.</div>
+              <div className="if-sub">Support the upkeep, programmes and outreach of your mosque. <span style={{ opacity: .75 }}>· Sokong masjid anda.</span></div>
             </div>
           </div>
           <span className="infaq-cta">Contribute →</span>
@@ -167,7 +201,7 @@ function Home() {
               { ic: 'users', t: 'Family & Youth', d: 'Programmes that nurture families and empower young Muslims.', to: '/community/family', c: 'mint' },
               { ic: 'heart', t: 'Give & Support', d: 'Sustain the mosque and its outreach through your infaq.', to: '/donations', c: 'coral' },
             ].map((p) => (
-              <a key={p.t} className="card card-hover card-body" href={'#' + p.to} style={{ padding: 28 }}>
+              <a key={p.t} className="card card-hover card-body" href={p.to} onClick={(e) => navTo(p.to, e)} style={{ padding: 28 }}>
                 <div style={{ width: 52, height: 52, borderRadius: 14, display: 'grid', placeItems: 'center', marginBottom: 18,
                   background: p.c === 'pink' ? 'var(--pink-100)' : p.c === 'mint' ? 'var(--mint-100)' : 'var(--coral-100)',
                   color: p.c === 'pink' ? 'var(--pink-600)' : p.c === 'mint' ? 'var(--mint-600)' : 'var(--coral)' }}>

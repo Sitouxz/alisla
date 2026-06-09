@@ -30,6 +30,7 @@ const NAV = [
   ]},
   { label: 'Learn', children: [
     { label: 'General Articles', to: '/learn/articles' },
+    { label: 'Khutbah Archive', to: '/learn/sermons' },
     { label: 'Online Videos', to: '/learn/videos' },
     { label: 'Know Islam', to: '/learn/know-islam' },
     { label: 'Course Registration', to: '/learn/course-registration' },
@@ -50,7 +51,7 @@ const NAV = [
 
 function Brand() {
   return (
-    <a className="brand" href="#/" aria-label="Masjid Al-Islah home">
+    <a className="brand" href="/" onClick={(e) => navTo('/', e)} aria-label="Masjid Al-Islah home">
       <img src="assets/images/logo.png" alt="Masjid Al-Islah" style={{ height: 40, width: 'auto', objectFit: 'contain' }} />
       <span className="brand-text">
         <span className="brand-top">MASJID</span>
@@ -81,14 +82,15 @@ function Header({ route }) {
             <div key={item.label} className={'nav-item' + (openIdx === i ? ' open' : '')}
               onMouseEnter={() => item.children && enter(i)} onMouseLeave={() => item.children && leave()}>
               <a className={'nav-link' + (isActive(item) ? ' active' : '')}
-                href={item.to ? '#' + item.to : (item.children ? '#' + item.children[0].to : '#')}>
+                href={item.to || (item.children && item.children[0].to) || '/'}
+                onClick={(e) => navTo(item.to || (item.children && item.children[0].to) || '/', e)}>
                 {item.label}
                 {item.children && <Icon name="chevron-down" size={13} className="caret" />}
               </a>
               {item.children && (
                 <div className="dropdown" onMouseEnter={() => enter(i)} onMouseLeave={leave}>
                   {item.children.map((c) => (
-                    <a key={c.to} className={'dd-link' + (c.sub ? ' dd-sub' : '')} href={'#' + c.to}>{c.label}</a>
+                    <a key={c.to} className={'dd-link' + (c.sub ? ' dd-sub' : '')} href={c.to} onClick={(e) => navTo(c.to, e)}>{c.label}</a>
                   ))}
                 </div>
               )}
@@ -96,8 +98,8 @@ function Header({ route }) {
           ))}
         </nav>
         <div className="header-actions">
-          <a className="icon-btn desktop-only" href="#/login" aria-label="Login"><Icon name="user" size={18} /></a>
-          <a className="btn btn-primary btn-sm desktop-only" href="#/donations"><Icon name="heart" size={16} className="ico" />Donate</a>
+          <a className="icon-btn desktop-only" href="/login" onClick={(e) => navTo('/login', e)} aria-label="Login"><Icon name="user" size={18} /></a>
+          <a className="btn btn-primary btn-sm desktop-only" href="/donations" onClick={(e) => navTo('/donations', e)}><Icon name="heart" size={16} className="ico" />Donate</a>
           <button className="icon-btn burger" aria-label="Open menu" onClick={() => setMobile(true)}><Icon name="menu" size={20} /></button>
         </div>
       </div>
@@ -115,7 +117,7 @@ function MobileDrawer({ open, onClose, route }) {
           <Brand />
           <button className="icon-btn" aria-label="Close menu" onClick={onClose}><Icon name="x" size={20} /></button>
         </div>
-        <a className="btn btn-primary" href="#/donations" onClick={onClose} style={{ width: '100%', justifyContent: 'center', marginBottom: 14 }}><Icon name="heart" size={16} className="ico" />Donate</a>
+        <a className="btn btn-primary" href="/donations" onClick={(e) => { navTo('/donations', e); onClose(); }} style={{ width: '100%', justifyContent: 'center', marginBottom: 14 }}><Icon name="heart" size={16} className="ico" />Donate</a>
         {NAV.map((item, i) => (
           item.children ? (
             <div key={item.label}>
@@ -125,16 +127,16 @@ function MobileDrawer({ open, onClose, route }) {
               </div>
               {acc === i && (
                 <div className="m-acc-body">
-                  {item.children.map((c) => <a key={c.to} href={'#' + c.to} onClick={onClose}>{c.label}</a>)}
+                  {item.children.map((c) => <a key={c.to} href={c.to} onClick={(e) => { navTo(c.to, e); onClose(); }}>{c.label}</a>)}
                 </div>
               )}
             </div>
           ) : (
-            <a key={item.label} className="m-acc-head" href={'#' + item.to} onClick={onClose} style={{ display: 'block' }}>{item.label}</a>
+            <a key={item.label} className="m-acc-head" href={item.to} onClick={(e) => { navTo(item.to, e); onClose(); }} style={{ display: 'block' }}>{item.label}</a>
           )
         ))}
-        <a className="m-acc-head" href="#/login" onClick={onClose} style={{ display: 'block' }}>Login</a>
-        <a className="m-acc-head" href="#/contact" onClick={onClose} style={{ display: 'block' }}>Contact</a>
+        <a className="m-acc-head" href="/login" onClick={(e) => { navTo('/login', e); onClose(); }} style={{ display: 'block' }}>Login</a>
+        <a className="m-acc-head" href="/contact" onClick={(e) => { navTo('/contact', e); onClose(); }} style={{ display: 'block' }}>Contact</a>
       </div>
     </div>
   );
@@ -150,12 +152,12 @@ function PrayerWidget({ compact }) {
             <Icon name={next.icon} size={24} />
           </div>
           <div>
-            <div className="prayer-next-label">Next Prayer · Punggol, Singapore</div>
+            <div className="prayer-next-label">Next Prayer <span style={{ opacity: .6, fontWeight: 400 }}>· Waktu Solat Seterusnya</span></div>
             <div className="prayer-next-name">{next.name} <span style={{ color: '#76767f', fontWeight: 400, fontSize: 'var(--fs-body)' }}>{fmt12(next.time)}</span></div>
           </div>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <div className="prayer-next-label">Time remaining</div>
+          <div className="prayer-next-label">Time remaining <span style={{ opacity: .6, fontWeight: 400 }}>· Masa Berbaki</span></div>
           <div className="prayer-countdown">{countdown}</div>
         </div>
         <div className="prayer-date">
@@ -201,7 +203,7 @@ function Footer() {
             <div key={c.h}>
               <h4>{c.h}</h4>
               <div className="footer-links">
-                {c.links.map(([l, to]) => <a key={to + l} href={'#' + to}>{l}</a>)}
+                {c.links.map(([l, to]) => <a key={to + l} href={to} onClick={(e) => navTo(to, e)}>{l}</a>)}
               </div>
             </div>
           ))}
@@ -214,14 +216,14 @@ function Footer() {
               <br /><span style={{ color: '#cfcfd6' }}>Office hours</span><br />
               Mon–Sat 9am–7pm · Sun 9am–3pm
             </p>
-            <a className="btn btn-outline btn-sm" href="#/contact" style={{ marginTop: 16, color: '#fff', borderColor: 'rgba(255,255,255,.25)' }}>Contact & directions</a>
+            <a className="btn btn-outline btn-sm" href="/contact" onClick={(e) => navTo('/contact', e)} style={{ marginTop: 16, color: '#fff', borderColor: 'rgba(255,255,255,.25)' }}>Contact & directions</a>
           </div>
         </div>
         <div className="footer-base">
           <span>© {new Date().getFullYear()} Masjid Al-Islah. All rights reserved.</span>
           <span style={{ display: 'flex', gap: 20 }}>
-            <a href="#/login">Member login</a>
-            <a href="#/contact">Contact</a>
+            <a href="/login" onClick={(e) => navTo('/login', e)}>Member login</a>
+            <a href="/contact" onClick={(e) => navTo('/contact', e)}>Contact</a>
           </span>
         </div>
       </div>

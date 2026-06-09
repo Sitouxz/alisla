@@ -3,6 +3,27 @@
    /about, /about/management-board, /about/staff, /about/career
    ============================================================ */
 
+const CMS_BASE_A = 'https://ne-website-manager.vercel.app';
+const CLIENT_SLUG_A = 'al-islah';
+
+function useCmsPeople(category) {
+  const [people, setPeople] = React.useState(null);
+  React.useEffect(() => {
+    fetch(`${CMS_BASE_A}/api/client/${CLIENT_SLUG_A}/posts?category=${encodeURIComponent(category)}&limit=50`)
+      .then(r => r.ok ? r.json() : [])
+      .then(posts => {
+        if (!Array.isArray(posts) || posts.length === 0) { setPeople([]); return; }
+        setPeople(posts.map((p, i) => {
+          const dept = (p.tags || []).map(t => t.startsWith('dept:') ? t.slice(5).trim() : null).find(Boolean) || '';
+          const order = parseInt(((p.tags || []).map(t => t.startsWith('order:') ? t.slice(6).trim() : null).find(Boolean)) || '99', 10);
+          return { name: p.title, role: p.excerpt || '', img: `cms-${i}`, cover: p.cover_url, note: p.content || '', dept, order };
+        }).sort((a, b) => a.order - b.order));
+      })
+      .catch(() => setPeople([]));
+  }, [category]);
+  return people;
+}
+
 function PersonCard({ p }) {
   return (
     <div className="card card-hover" style={{ textAlign: 'center' }}>
@@ -87,15 +108,33 @@ const BOARD = [
   { name: 'Mr. Hafiz Othman', role: 'Board Member', img: 'b8' },
 ];
 function ManagementBoard() {
+  const cmsPeople = useCmsPeople('Management Board');
+  const board = cmsPeople && cmsPeople.length > 0 ? cmsPeople : BOARD;
+  const loading = cmsPeople === null;
   return (
     <React.Fragment>
       <PageHero trail={[{ label: 'About', to: '/about' }, { label: 'Management Board' }]} eyebrow="About"
         title="Management Board" sub="The Mosque Management Board (MMB) provides governance and stewardship for Masjid Al-Islah, appointed under the guidance of MUIS." />
       <section className="section">
         <div className="container">
-          <div className="grid grid-4">
-            {BOARD.map((p) => <PersonCard key={p.name} p={p} />)}
-          </div>
+          {loading ? (
+            <div className="grid grid-4">{[1,2,3,4,5,6,7,8].map(i => <SkeletonCard key={i} />)}</div>
+          ) : (
+            <div className="grid grid-4">
+              {board.map((p) => (
+                <div key={p.name} className="card card-hover" style={{ textAlign: 'center' }}>
+                  <div className="media-1x1">
+                    {p.cover ? <img src={p.cover} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Img id={p.img} ph={p.name} />}
+                  </div>
+                  <div className="card-body">
+                    <h3 style={{ fontSize: 'var(--fs-h4)', marginBottom: 4 }}>{p.name}</h3>
+                    <div style={{ color: 'var(--coral)', fontWeight: 'var(--fw-semibold)', fontSize: 'var(--fs-small)' }}>{p.role}</div>
+                    {p.note && <p style={{ fontSize: 'var(--fs-small)', color: 'var(--fg3)', marginTop: 10 }}>{p.note}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </React.Fragment>
@@ -119,17 +158,47 @@ const STAFF_DEPTS = [
   ]},
 ];
 function Staff() {
+  const cmsPeople = useCmsPeople('Staff');
+  const loading = cmsPeople === null;
+  /* Group by dept — CMS or static fallback */
+  const depts = React.useMemo(() => {
+    if (loading) return null;
+    if (cmsPeople && cmsPeople.length > 0) {
+      const map = {};
+      cmsPeople.forEach(p => {
+        const d = p.dept || 'Other';
+        if (!map[d]) map[d] = [];
+        map[d].push(p);
+      });
+      return Object.entries(map).map(([dept, people]) => ({ dept, people }));
+    }
+    return STAFF_DEPTS;
+  }, [cmsPeople, loading]);
   return (
     <React.Fragment>
       <PageHero trail={[{ label: 'About', to: '/about' }, { label: 'Our Staff' }]} eyebrow="About"
         title="Our Staff" sub="Meet the dedicated team serving the Al-Islah community day to day." />
       <section className="section">
         <div className="container">
-          {STAFF_DEPTS.map((d) => (
+          {loading ? (
+            <React.Fragment>
+              {[1,2].map(i => <div key={i} style={{ marginBottom: 56 }}><Skeleton height={24} width={200} style={{ marginBottom: 16 }} /><div className="grid grid-3">{[1,2,3].map(j => <SkeletonCard key={j} />)}</div></div>)}
+            </React.Fragment>
+          ) : (depts || []).map((d) => (
             <div key={d.dept} style={{ marginBottom: 56 }}>
               <Eyebrow>{d.dept}</Eyebrow>
               <div className="grid grid-3" style={{ marginTop: 8 }}>
-                {d.people.map((p) => <PersonCard key={p.name} p={p} />)}
+                {d.people.map((p) => (
+                  <div key={p.name} className="card card-hover" style={{ textAlign: 'center' }}>
+                    <div className="media-1x1">
+                      {p.cover ? <img src={p.cover} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Img id={p.img} ph={p.name} />}
+                    </div>
+                    <div className="card-body">
+                      <h3 style={{ fontSize: 'var(--fs-h4)', marginBottom: 4 }}>{p.name}</h3>
+                      <div style={{ color: 'var(--coral)', fontWeight: 'var(--fw-semibold)', fontSize: 'var(--fs-small)' }}>{p.role}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}

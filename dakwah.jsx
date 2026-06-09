@@ -4,6 +4,62 @@
    (physical/online), one-on-one
    ============================================================ */
 
+const CMS_BASE_D = 'https://ne-website-manager.vercel.app';
+const CLIENT_SLUG_D = 'al-islah';
+
+/* Parse event metadata from CMS tags array: date:..., time:..., loc:..., speaker:..., fee:..., register:... */
+function parseEventTags(tags) {
+  const meta = {};
+  (tags || []).forEach(t => {
+    const idx = t.indexOf(':');
+    if (idx > 0) {
+      const k = t.slice(0, idx).trim();
+      const v = t.slice(idx + 1).trim();
+      if (['date','time','loc','speaker','fee','register','tag','tagc'].includes(k)) meta[k] = v;
+    }
+  });
+  return meta;
+}
+
+function useCmsEvents() {
+  const [events, setEvents] = React.useState(null);
+  React.useEffect(() => {
+    fetch(`${CMS_BASE_D}/api/client/${CLIENT_SLUG_D}/posts?category=Event&limit=50`)
+      .then(r => r.ok ? r.json() : [])
+      .then(posts => {
+        if (!Array.isArray(posts) || posts.length === 0) { setEvents([]); return; }
+        setEvents(posts.map((p, i) => {
+          const meta = parseEventTags(p.tags);
+          return {
+            id: p.slug || `cms-${p.id}`,
+            cat: meta.tag || 'Event',
+            tag: meta.tag || 'Event',
+            tagc: meta.tagc || '',
+            date: meta.date || fmtDateD(p.published_at),
+            time: meta.time || '',
+            title: p.title,
+            loc: meta.loc || 'Al-Islah Mosque',
+            img: `ev-${(i % 4) + 1}`,
+            cover: p.cover_url,
+            speaker: meta.speaker || 'Al-Islah Asatizah',
+            desc: p.excerpt || '',
+            content: p.content || '',
+            fee: meta.fee || 'Free',
+            register: meta.register || '/learn/course-registration',
+            fromCms: true,
+          };
+        }));
+      })
+      .catch(() => setEvents([]));
+  }, []);
+  return events;
+}
+
+function fmtDateD(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 const EVENTS = [
   { id: 'adil-solat-essentials', cat: 'Courses', tag: 'Course', tagc: 'mint', date: 'Sat, 17 Jan 2026', time: '9:00 AM', title: 'ADIL: Solat Essentials', loc: 'Online (Zoom)', img: 'ev-quran', speaker: 'Al-Islah Asatizah', desc: 'A focused one-day workshop covering the essentials of solat — from purification and conditions of validity to the actions and supplications of prayer. Free to attend; registration required.', fee: 'Free', register: 'https://tinyurl.com/adilf26' },
   { id: 'warkah-cinta-pertama', cat: 'Youth', tag: 'Youth', tagc: '', date: 'Coming soon', time: 'TBC', title: 'Warkah Cinta Pertama', loc: 'Al-Islah Mosque', img: 'ev-youth', speaker: 'Ustazah Syariati Sulaiman', desc: 'A qasidah and spiritual evening exploring the language of love in Islamic tradition, led by Ustazah Syariati Sulaiman. Tickets via the payment page.', fee: 'See payment page', register: '#/payment' },
@@ -15,7 +71,7 @@ const EVENTS = [
 
 function EventGridCard({ ev }) {
   return (
-    <a className="card card-hover" href={'#/dakwah/events/' + ev.id} style={{ display: 'block' }}>
+    <a className="card card-hover" href={'/dakwah/events/' + ev.id} onClick={(e) => navTo('/dakwah/events/' + ev.id, e)} style={{ display: 'block' }}>
       <div className="media-4x3"><Img id={ev.img} ph={ev.title} /></div>
       <div className="card-body">
         <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}><span className={'chip ' + (ev.tagc || '')}>{ev.tag}</span></div>
@@ -30,9 +86,13 @@ function EventGridCard({ ev }) {
 }
 
 function UpcomingEvents() {
-  const cats = ['All', 'Lectures', 'Courses', 'Youth', 'Family', 'Worship'];
+  const cats = ['All', 'Lectures', 'Courses', 'Youth', 'Family', 'Worship', 'Event'];
   const [cat, setCat] = React.useState('All');
-  const list = cat === 'All' ? EVENTS : EVENTS.filter((e) => e.cat === cat);
+  const cmsEvents = useCmsEvents();
+  /* CMS events shown first (if any), then static fallback events */
+  const allEvents = cmsEvents && cmsEvents.length > 0 ? [...cmsEvents, ...EVENTS] : EVENTS;
+  const loading = cmsEvents === null;
+  const list = cat === 'All' ? allEvents : allEvents.filter((e) => e.cat === cat);
   return (
     <React.Fragment>
       <PageHero trail={[{ label: 'Dakwah' }, { label: 'Upcoming Events' }]} eyebrow="Dakwah"
@@ -42,9 +102,15 @@ function UpcomingEvents() {
           <div className="filter-bar" style={{ marginBottom: 36 }}>
             {cats.map((c) => <button key={c} className={'filter-btn' + (cat === c ? ' active' : '')} onClick={() => setCat(c)}>{c}</button>)}
           </div>
-          <div className="grid grid-3" key={cat}>
-            {list.map((ev) => <EventGridCard key={ev.id} ev={ev} />)}
-          </div>
+          {loading ? (
+            <div className="grid grid-3">
+              {[1,2,3,4,5,6].map((i) => <SkeletonCard key={i} />)}
+            </div>
+          ) : (
+            <div className="grid grid-3" key={cat}>
+              {list.map((ev) => <EventGridCard key={ev.id} ev={ev} />)}
+            </div>
+          )}
         </div>
       </section>
     </React.Fragment>
@@ -53,8 +119,49 @@ function UpcomingEvents() {
 
 function EventDetail({ route }) {
   const id = route.split('/').pop();
-  const ev = EVENTS.find((e) => e.id === id);
+  const [cmsEv, setCmsEv] = React.useState(undefined); // undefined=loading, null=not found, obj=found
+  React.useEffect(() => {
+    fetch(`${CMS_BASE_D}/api/client/${CLIENT_SLUG_D}/posts/${id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(p => {
+        if (!p) { setCmsEv(null); return; }
+        const meta = parseEventTags(p.tags);
+        setCmsEv({
+          id: p.slug,
+          cat: meta.tag || 'Event',
+          tag: meta.tag || 'Event',
+          date: meta.date || fmtDateD(p.published_at),
+          time: meta.time || '',
+          loc: meta.loc || 'Al-Islah Mosque',
+          speaker: meta.speaker || 'Al-Islah Asatizah',
+          fee: meta.fee || 'Free',
+          register: meta.register || '/learn/course-registration',
+          title: p.title,
+          desc: p.excerpt || '',
+          content: p.content || '',
+          cover: p.cover_url,
+        });
+      })
+      .catch(() => setCmsEv(null));
+  }, [id]);
+
+  /* Fall back to static array if CMS doesn't have it */
+  const ev = (cmsEv !== undefined && cmsEv !== null) ? cmsEv : (cmsEv === null ? EVENTS.find((e) => e.id === id) : null);
+
+  if (cmsEv === undefined) return (
+    <React.Fragment>
+      <div style={{ padding: 'clamp(60px,10vw,100px) 0' }}>
+        <div className="container" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Skeleton height={48} width="60%" />
+          <Skeleton height={24} width="30%" />
+        </div>
+      </div>
+    </React.Fragment>
+  );
+
   if (!ev) return <div className="container section"><h1>Event not found</h1><Btn to="/dakwah/events">All events</Btn></div>;
+
+  const registerTo = ev.register && !ev.register.startsWith('#') ? ev.register : '/learn/course-registration';
   return (
     <React.Fragment>
       <PageHero trail={[{ label: 'Dakwah' }, { label: 'Events', to: '/dakwah/events' }, { label: ev.title }]} eyebrow={ev.tag} title={ev.title} />
@@ -62,19 +169,33 @@ function EventDetail({ route }) {
         <div className="container">
           <div className="hero-grid" style={{ alignItems: 'start' }}>
             <div>
-              <div className="arch-sm" style={{ marginBottom: 28 }}><div className="media-16x9"><Img id={ev.img} ph={ev.title} /></div></div>
+              <div className="arch-sm" style={{ marginBottom: 28 }}>
+                <div className="media-16x9">
+                  {ev.cover ? <img src={ev.cover} alt={ev.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Img id={ev.img || 'ev-tafsir'} ph={ev.title} />}
+                </div>
+              </div>
               <Eyebrow>About this event</Eyebrow>
-              <p className="lead">{ev.desc}</p>
-              <p className="prose" style={{ marginTop: 16 }}>All are welcome to attend. Please arrive early to find a seat, and observe mosque etiquette and modest dress. For enquiries, contact the mosque office.</p>
+              {ev.content ? (
+                <div className="prose" dangerouslySetInnerHTML={{ __html: ev.content }} />
+              ) : (
+                <React.Fragment>
+                  <p className="lead">{ev.desc}</p>
+                  <p className="prose" style={{ marginTop: 16 }}>All are welcome to attend. Please arrive early to find a seat, and observe mosque etiquette and modest dress. For enquiries, contact the mosque office.</p>
+                </React.Fragment>
+              )}
             </div>
             <div className="card card-body" style={{ padding: 32, position: 'sticky', top: 96 }}>
-              {[['calendar', 'Date', ev.date], ['clock', 'Time', ev.time], ['map-pin', 'Location', ev.loc], ['user', 'Speaker', ev.speaker]].map(([ic, l, v]) => (
+              {[['calendar', 'Date', ev.date], ev.time && ['clock', 'Time', ev.time], ['map-pin', 'Location', ev.loc], ['user', 'Speaker', ev.speaker], ev.fee && ['credit-card', 'Fee', ev.fee]].filter(Boolean).map(([ic, l, v]) => (
                 <div className="info-row" key={l}>
                   <div className="info-ico"><Icon name={ic} size={18} /></div>
                   <div><div className="lbl">{l}</div><div className="val">{v}</div></div>
                 </div>
               ))}
-              <Btn to="/learn/course-registration" icon="check" >Register interest</Btn>
+              {registerTo.startsWith('http') ? (
+                <a className="btn btn-primary" href={registerTo} target="_blank" rel="noopener"><Icon name="check" size={16} className="ico" />Register interest</a>
+              ) : (
+                <Btn to={registerTo} icon="check">Register interest</Btn>
+              )}
               <div style={{ height: 10 }} />
               <Btn href="https://calendar.google.com" variant="outline" icon="calendar">Add to calendar</Btn>
             </div>
@@ -127,7 +248,31 @@ const COURSES = [
   { title: 'Islamic Short Courses', level: 'All levels', dur: 'Varies', fee: 'See details', img: 'c6', desc: 'Regular workshops and short courses on fiqh, aqidah, sirah and Arabic. Check Upcoming Events for the latest schedule.', link: '#/dakwah/events' },
 ];
 
+function useCmsCourses() {
+  const [courses, setCourses] = React.useState(null);
+  React.useEffect(() => {
+    fetch(`${CMS_BASE_D}/api/client/${CLIENT_SLUG_D}/posts?category=Course&limit=50`)
+      .then(r => r.ok ? r.json() : [])
+      .then(posts => {
+        if (!Array.isArray(posts) || posts.length === 0) { setCourses([]); return; }
+        setCourses(posts.map((p, i) => {
+          const level = (p.tags || []).map(t => t.startsWith('level:') ? t.slice(6).trim() : null).find(Boolean) || 'All levels';
+          const dur = (p.tags || []).map(t => t.startsWith('dur:') ? t.slice(4).trim() : null).find(Boolean) || 'Varies';
+          const fee = (p.tags || []).map(t => t.startsWith('fee:') ? t.slice(4).trim() : null).find(Boolean) || 'See details';
+          const link = (p.tags || []).map(t => t.startsWith('link:') ? t.slice(5).trim() : null).find(Boolean) || '/learn/course-registration';
+          return { title: p.title, level, dur, fee, img: `c${(i % 6) + 1}`, cover: p.cover_url, desc: p.excerpt || '', link, slug: p.slug };
+        }));
+      })
+      .catch(() => setCourses([]));
+  }, []);
+  return courses;
+}
+
 function IslamicCourses() {
+  const cmsCourses = useCmsCourses();
+  const allCourses = cmsCourses && cmsCourses.length > 0 ? cmsCourses : COURSES;
+  const loading = cmsCourses === null;
+  window.COURSES = allCourses;
   return (
     <React.Fragment>
       <PageHero trail={[{ label: 'Dakwah' }, { label: 'Islamic Courses' }]} eyebrow="Dakwah"
@@ -165,24 +310,35 @@ function IslamicCourses() {
       <section className="section">
         <div className="container">
           <SectionHead eyebrow="All Programmes" title="Other learning opportunities" />
-          <div className="grid grid-3" style={{ marginTop: 36 }}>
-            {COURSES.map((c) => (
-              <a key={c.title} className="card card-hover" href={c.link} style={{ display: 'block' }}>
-                <div className="media-16x9"><Img id={c.img} ph={c.title} /></div>
-                <div className="card-body">
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-                    <span className="chip">{c.level}</span><span className="chip slate">{c.dur}</span>
+          {loading ? (
+            <div className="grid grid-3" style={{ marginTop: 36 }}>
+              {[1,2,3,4,5,6].map(i => <SkeletonCard key={i} />)}
+            </div>
+          ) : (
+            <div className="grid grid-3" style={{ marginTop: 36 }}>
+              {allCourses.map((c) => (
+                <a key={c.title} className="card card-hover"
+                  href={c.link && !c.link.startsWith('#') ? c.link : '/learn/course-registration'}
+                  onClick={c.link && !c.link.startsWith('#') && !c.link.startsWith('http') ? (e) => navTo(c.link, e) : undefined}
+                  style={{ display: 'block' }}>
+                  <div className="media-16x9">
+                    {c.cover ? <img src={c.cover} alt={c.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Img id={c.img} ph={c.title} />}
                   </div>
-                  <h3 style={{ fontSize: 'var(--fs-h4)', marginBottom: 10 }}>{c.title}</h3>
-                  <p style={{ fontSize: 'var(--fs-small)', color: 'var(--fg3)', marginBottom: 18 }}>{c.desc}</p>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 'var(--fw-bold)', color: 'var(--ink)' }}>{c.fee}</span>
-                    <span className="btn btn-outline btn-sm">Learn more</span>
+                  <div className="card-body">
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                      <span className="chip">{c.level}</span><span className="chip slate">{c.dur}</span>
+                    </div>
+                    <h3 style={{ fontSize: 'var(--fs-h4)', marginBottom: 10 }}>{c.title}</h3>
+                    <p style={{ fontSize: 'var(--fs-small)', color: 'var(--fg3)', marginBottom: 18 }}>{c.desc}</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 'var(--fw-bold)', color: 'var(--ink)' }}>{c.fee}</span>
+                      <span className="btn btn-outline btn-sm">Learn more</span>
+                    </div>
                   </div>
-                </div>
-              </a>
-            ))}
-          </div>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </React.Fragment>
