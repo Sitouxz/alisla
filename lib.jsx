@@ -67,27 +67,73 @@ function Icon({ name, size = 20, className = '', strokeWidth = 1.85, fill = 'non
 }
 
 /* ---------- Image slot wrapper ---------- */
-// Real Al-Islah Mosque photography (Wikimedia Commons + the mosque's own media),
-// used as drop-in DUMMY defaults. A user dragging their own image onto a slot
-// still overrides these. Assigned deterministically by slot id so each slot is
-// stable across reloads and adjacent cards vary.
-const IMG_POOL = [
-  'assets/images/about-main.jpg',
-  'assets/images/mosque-exterior-1.jpg',
-  'assets/images/mosque-exterior-2.jpg',
-  'assets/images/mosque-interior.jpg',
-  'assets/images/mosque-photo.jpg',
-  'assets/images/community-1.jpg',
-  'assets/images/community-2.jpg',
-  'assets/images/community-3.jpg',
-  'assets/images/community-4.jpg',
-  'assets/images/community-5.jpg',
-  'assets/images/article-1.jpg',
-  'assets/images/article-2.jpg',
-  'assets/images/article-3.jpg',
+// Absolute paths so images resolve correctly on any deep route (e.g. /about/management-board).
+// Pools cover mosque exteriors, interiors, community activities, and article/programme contexts.
+const IMG_POOL_MOSQUE = [
+  '/assets/images/mosque-official-1.jpg',
+  '/assets/images/mosque-official-2.jpg',
+  '/assets/images/mosque-official-3.jpg',
+  '/assets/images/mosque-exterior-1.jpg',
+  '/assets/images/mosque-exterior-2.jpg',
+  '/assets/images/mosque-interior.jpg',
+  '/assets/images/mosque-photo.jpg',
+  '/assets/images/about-main.jpg',
 ];
+const IMG_POOL_COMMUNITY = [
+  '/assets/images/community-1.jpg',
+  '/assets/images/community-2.jpg',
+  '/assets/images/community-3.jpg',
+  '/assets/images/community-4.jpg',
+  '/assets/images/community-5.jpg',
+  '/assets/images/community-6.jpg',
+  '/assets/images/community-7.jpg',
+  '/assets/images/community-8.jpg',
+  '/assets/images/community-9.jpg',
+];
+const IMG_POOL_ARTICLE = [
+  '/assets/images/learn-official-WhatsApp_Image_2025-07-23_at_12.47.19.jpeg',
+  '/assets/images/learn-official-WhatsApp_Image_2025-07-23_at_12.48.02.jpeg',
+  '/assets/images/learn-official-WhatsApp_Image_2025-07-23_at_12.49.06.jpeg',
+  '/assets/images/learn-official-WhatsApp_Image_2025-07-03_at_15.20.40.jpeg',
+  '/assets/images/learn-official-WhatsApp_Image_2025-07-03_at_15.02.10_1.jpeg',
+  '/assets/images/article-1.jpg',
+  '/assets/images/article-2.jpg',
+  '/assets/images/article-3.jpg',
+  '/assets/images/article-4.jpg',
+  '/assets/images/article-5.jpg',
+];
+const IMG_POOL = [...IMG_POOL_MOSQUE, ...IMG_POOL_COMMUNITY, ...IMG_POOL_ARTICLE];
+
+// IDs that should use community photos
+const COMMUNITY_IDS = /^(p\d|sd-|befr|social|community|family|youth|prog|c\d)/;
+// IDs that should use article/lecture photos
+const ARTICLE_IDS = /^(a\d|ev-|v\d|c\d|adil|tadarrus|qs-|one-on-one|course|learn|sermon|tafsir|fiqh|tahajjud|warkah)/;
+
 function hashId(s) { let h = 0; for (let i = 0; i < (s || '').length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
-function poolSrc(id) { return IMG_POOL[hashId(id || 'x') % IMG_POOL.length]; }
+function poolSrc(id) {
+  const h = hashId(id || 'x');
+  if (ARTICLE_IDS.test(id || '')) return IMG_POOL_ARTICLE[h % IMG_POOL_ARTICLE.length];
+  if (COMMUNITY_IDS.test(id || '')) return IMG_POOL_COMMUNITY[h % IMG_POOL_COMMUNITY.length];
+  return IMG_POOL_MOSQUE[h % IMG_POOL_MOSQUE.length];
+}
+
+/* Initials avatar for person cards where no photo is available */
+function InitialsAvatar({ name }) {
+  const initials = (name || '?').split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
+  const COLORS = ['#C05621', '#5B6A7A', '#065F46', '#1E40AF', '#7C3AED', '#B45309'];
+  const bg = COLORS[hashId(name || '') % COLORS.length];
+  return (
+    <div style={{
+      width: '100%', height: '100%', background: bg,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      color: '#fff', fontSize: 'clamp(28px,4vw,48px)', fontWeight: 700,
+      letterSpacing: '.06em', userSelect: 'none',
+    }}>
+      {initials}
+    </div>
+  );
+}
+
 function Img({ id, ph, className = '', radius, shape = 'rect', fit = 'cover', style, src }) {
   return (
     <image-slot id={id} shape={shape} fit={fit} radius={radius}
@@ -364,5 +410,5 @@ function useRoute() {
 Object.assign(window, {
   Icon, Img, Eyebrow, SectionHead, Btn, Breadcrumb, PageHero, Bilingual,
   Accordion, Field, PRAYERS, fmt12, useNextPrayer, useRoute, HIJRI_DATE, gregorian, toMins,
-  Skeleton, SkeletonCard,
+  Skeleton, SkeletonCard, InitialsAvatar,
 });

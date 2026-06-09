@@ -6,6 +6,17 @@
 const CMS_BASE_A = 'https://ne-website-manager.vercel.app';
 const CLIENT_SLUG_A = 'al-islah';
 
+function PersonAvatar() {
+  return (
+    <div style={{ width: '100%', height: '100%', background: '#EDE8E3', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' }}>
+      <svg viewBox="0 0 120 130" xmlns="http://www.w3.org/2000/svg" style={{ width: '72%', display: 'block' }}>
+        <ellipse cx="60" cy="42" rx="26" ry="28" fill="#B0A89E"/>
+        <ellipse cx="60" cy="120" rx="52" ry="38" fill="#B0A89E"/>
+      </svg>
+    </div>
+  );
+}
+
 function useCmsPeople(category) {
   const [people, setPeople] = React.useState(null);
   React.useEffect(() => {
@@ -27,7 +38,7 @@ function useCmsPeople(category) {
 function PersonCard({ p }) {
   return (
     <div className="card card-hover" style={{ textAlign: 'center' }}>
-      <div className="media-1x1"><Img id={p.img} ph={p.name} /></div>
+      <div className="media-1x1"><PersonAvatar /></div>
       <div className="card-body">
         <h3 style={{ fontSize: 'var(--fs-h4)', marginBottom: 4 }}>{p.name}</h3>
         <div style={{ color: 'var(--coral)', fontWeight: 'var(--fw-semibold)', fontSize: 'var(--fs-small)' }}>{p.role}</div>
@@ -51,7 +62,7 @@ function About() {
               <p>Masjid Al-Islah is located within the densely populated Punggol New Town at 30 Punggol Field, Singapore 828812, at the junction of Punggol Place.</p>
               <p>The mosque serves the Muslim community in Punggol — offering daily prayers, religious education, family and youth programmes, and community service for residents of all ages.</p>
             </div>
-            <div className="arch" style={{ boxShadow: 'var(--shadow-lg)' }}><div style={{ aspectRatio: '4/5' }}><Img id="about-hero" ph="Al-Islah Mosque — exterior daylight" /></div></div>
+            <div className="arch" style={{ boxShadow: 'var(--shadow-lg)' }}><div style={{ aspectRatio: '4/5' }}><Img id="about-hero" ph="Al-Islah Mosque — exterior daylight" src="/assets/images/mosque-official-2.jpg" /></div></div>
           </div>
         </div>
       </section>
@@ -124,7 +135,7 @@ function ManagementBoard() {
               {board.map((p) => (
                 <div key={p.name} className="card card-hover" style={{ textAlign: 'center' }}>
                   <div className="media-1x1">
-                    {p.cover ? <img src={p.cover} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Img id={p.img} ph={p.name} />}
+                    {p.cover ? <img src={p.cover} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <PersonAvatar name={p.name} />}
                   </div>
                   <div className="card-body">
                     <h3 style={{ fontSize: 'var(--fs-h4)', marginBottom: 4 }}>{p.name}</h3>
@@ -191,7 +202,7 @@ function Staff() {
                 {d.people.map((p) => (
                   <div key={p.name} className="card card-hover" style={{ textAlign: 'center' }}>
                     <div className="media-1x1">
-                      {p.cover ? <img src={p.cover} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Img id={p.img} ph={p.name} />}
+                      {p.cover ? <img src={p.cover} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <PersonAvatar name={p.name} />}
                     </div>
                     <div className="card-body">
                       <h3 style={{ fontSize: 'var(--fs-h4)', marginBottom: 4 }}>{p.name}</h3>
