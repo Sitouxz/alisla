@@ -4,17 +4,53 @@
    /learn/course-registration
    ============================================================ */
 
-const ARTICLES = [
+const CMS_BASE = 'https://ne-website-manager.vercel.app';
+const CLIENT_SLUG = 'al-islah';
+
+function useCmsPosts() {
+  const [posts, setPosts] = React.useState(null);
+  React.useEffect(() => {
+    fetch(`${CMS_BASE}/api/client/${CLIENT_SLUG}/posts`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setPosts(data))
+      .catch(() => setPosts([]));
+  }, []);
+  return posts;
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+/* Fallback static articles (shown while loading or if API fails) */
+const ARTICLES_FALLBACK = [
   { t: 'Sifat Sombong Pemusnah Segalanya', cat: 'Character', date: '2 Jun 2026', read: '5 min', img: 'a1', feat: true, excerpt: 'Sombong adalah sifat yang amat dibenci oleh Allah SWT. Artikel ini menelusuri bahaya sifat sombong dan cara kita menghindarinya.' },
   { t: 'DO NOT LOSE HOPE IN ALLAH SWT', cat: 'Worship', date: '28 May 2026', read: '4 min', img: 'a2', excerpt: 'No matter how far you feel, the door of Allah\'s mercy is always open. A reminder for those who feel they have strayed.' },
-  { t: 'Sampaikan Dengan Hikmah', cat: 'Dakwah', date: '21 May 2026', read: '6 min', img: 'a3', excerpt: 'Bagaimana cara kita berkongsi Islam dengan orang lain secara bijaksana, penuh kasih sayang dan berkesan.' },
-  { t: 'Ayat al-Quran Yang Buat Nabi Menangis', cat: 'Tafsir', date: '14 May 2026', read: '5 min', img: 'a4', excerpt: 'Terdapat ayat al-Quran yang menyentuh hati Rasulullah SAW hingga baginda menangis. Apakah ayat tersebut dan mengapa?' },
   { t: 'Configuring my Tahajjud', cat: 'Worship', date: '7 May 2026', read: '7 min', img: 'a5', excerpt: 'A practical guide to establishing the night prayer as a consistent habit — timings, rakaat counts, and what to recite.' },
   { t: 'The Spirit of Community in Islam', cat: 'Community', date: '1 May 2026', read: '5 min', img: 'a6', excerpt: 'Why togetherness is at the heart of our faith and how the mosque is its centre.' },
 ];
+
 function GeneralArticles() {
-  const cats = ['All', 'Fiqh', 'Worship', 'Tafsir', 'Family', 'Community'];
+  const cats = ['All', 'Fiqh', 'Worship', 'Tafsir', 'Dakwah', 'Character', 'Community'];
   const [cat, setCat] = React.useState('All');
+  const rawPosts = useCmsPosts();
+
+  /* Map CMS posts to article shape; fallback while loading */
+  const ARTICLES = rawPosts
+    ? rawPosts.map((p, i) => ({
+        t: p.title,
+        cat: p.category || 'General',
+        date: fmtDate(p.published_at),
+        read: '',
+        img: `a${(i % 6) + 1}`,
+        feat: i === 0,
+        excerpt: p.excerpt || '',
+        slug: p.slug,
+        cover: p.cover_url,
+      }))
+    : ARTICLES_FALLBACK;
+
   const feat = ARTICLES.find((a) => a.feat);
   const rest = ARTICLES.filter((a) => (cat === 'All' || a.cat === cat) && !a.feat);
   return (
