@@ -407,3 +407,9 @@ button { font-family: inherit; }
   .prayer-date { text-align: left; }
   .schedule-row { grid-template-columns: 1fr; gap: 6px; }
 }
+
+/* ── Skeleton shimmer ── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

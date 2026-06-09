@@ -1,18 +1,11 @@
-{
+﻿{
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "Static HTTP Server (Python)",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "3000"],
-      "port": 3000
-    },
-    {
-      "name": "Static HTTP Server (Node npx serve)",
+      "name": "alisla",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "."],
-      "port": 3000,
-      "autoPort": true
+      "runtimeArgs": ["serve", "-s", ".", "-l", "8787"],
+      "port": 8787
     }
   ]
 }

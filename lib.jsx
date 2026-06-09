@@ -110,21 +110,29 @@ function SectionHead({ eyebrow, eyebrowColor, title, sub, center, children }) {
     </div>
   );
 }
+function navTo(to, e) {
+  if (e) e.preventDefault();
+  window.history.pushState({}, '', to);
+  window.dispatchEvent(new PopStateEvent('popstate'));
+  window.scrollTo({ top: 0, behavior: 'auto' });
+}
 function Btn({ to, href, variant = 'primary', size, icon, iconRight, children, onClick, type }) {
   const cls = `btn btn-${variant}${size ? ' btn-' + size : ''}`;
   const inner = <>{icon && <Icon name={icon} size={18} className="ico" />}{children}{iconRight && <Icon name={iconRight} size={18} className="ico" />}</>;
-  if (to) return <a className={cls} href={'#' + to} onClick={onClick}>{inner}</a>;
+  if (to) return <a className={cls} href={to} onClick={(e) => { navTo(to, e); onClick && onClick(e); }}>{inner}</a>;
   if (href) return <a className={cls} href={href} target="_blank" rel="noopener" onClick={onClick}>{inner}</a>;
   return <button className={cls} type={type || 'button'} onClick={onClick}>{inner}</button>;
 }
 function Breadcrumb({ trail }) {
   return (
     <nav className="breadcrumb" aria-label="Breadcrumb">
-      <a href="#/">Home</a>
+      <a href="/" onClick={(e) => navTo('/', e)}>Home</a>
       {trail.map((t, i) => (
         <React.Fragment key={i}>
           <span className="sep"><Icon name="chevron-right" size={13} /></span>
-          {t.to && i < trail.length - 1 ? <a href={'#' + t.to}>{t.label}</a> : <span style={{ color: 'var(--fg1)', fontWeight: 500 }}>{t.label}</span>}
+          {t.to && i < trail.length - 1
+            ? <a href={t.to} onClick={(e) => navTo(t.to, e)}>{t.label}</a>
+            : <span style={{ color: 'var(--fg1)', fontWeight: 500 }}>{t.label}</span>}
         </React.Fragment>
       ))}
     </nav>
@@ -195,18 +203,94 @@ function Field({ label, type = 'text', name, required, full, placeholder, hint, 
   );
 }
 
-/* ---------- Prayer time logic ---------- */
-// Representative daily timings for Singapore (fixed sample set, MUIS-style).
-const PRAYERS = [
-  { key: 'subuh', name: 'Subuh', arabic: 'الفجر', icon: 'sunrise', time: '05:42' },
-  { key: 'syuruk', name: 'Syuruk', arabic: 'الشروق', icon: 'sun', time: '07:03' },
-  { key: 'zohor', name: 'Zohor', arabic: 'الظهر', icon: 'sun', time: '13:09' },
-  { key: 'asar', name: 'Asar', arabic: 'العصر', icon: 'sunset', time: '16:32' },
-  { key: 'maghrib', name: 'Maghrib', arabic: 'المغرب', icon: 'sunset', time: '19:11' },
-  { key: 'isyak', name: 'Isyak', arabic: 'العشاء', icon: 'moon', time: '20:25' },
+/* ---------- Prayer time logic — live from Aladhan API ---------- */
+// Fallback hardcoded in case API is unavailable
+const PRAYERS_FALLBACK = [
+  { key: 'subuh',   name: 'Subuh',   arabic: 'الفجر',  icon: 'sunrise', time: '05:42' },
+  { key: 'syuruk',  name: 'Syuruk',  arabic: 'الشروق', icon: 'sun',     time: '07:03' },
+  { key: 'zohor',   name: 'Zohor',   arabic: 'الظهر',  icon: 'sun',     time: '13:09' },
+  { key: 'asar',    name: 'Asar',    arabic: 'العصر',  icon: 'sunset',  time: '16:32' },
+  { key: 'maghrib', name: 'Maghrib', arabic: 'المغرب', icon: 'sunset',  time: '19:11' },
+  { key: 'isyak',   name: 'Isyak',   arabic: 'العشاء', icon: 'moon',    time: '20:25' },
 ];
+
+const HIJRI_MONTHS_MS = ['Muharram','Safar','Rabiulawal','Rabiulakhir','Jamadilawal','Jamadilakhir','Rejab','Syaaban','Ramadan','Syawal','Zulkaedah','Zulhijjah'];
+
+function parsePrayerTimes(timings) {
+  const map = [
+    { key: 'subuh',   api: 'Fajr',    name: 'Subuh',   arabic: 'الفجر',  icon: 'sunrise' },
+    { key: 'syuruk',  api: 'Sunrise', name: 'Syuruk',  arabic: 'الشروق', icon: 'sun'     },
+    { key: 'zohor',   api: 'Dhuhr',   name: 'Zohor',   arabic: 'الظهر',  icon: 'sun'     },
+    { key: 'asar',    api: 'Asr',     name: 'Asar',    arabic: 'العصر',  icon: 'sunset'  },
+    { key: 'maghrib', api: 'Maghrib', name: 'Maghrib', arabic: 'المغرب', icon: 'sunset'  },
+    { key: 'isyak',   api: 'Isha',    name: 'Isyak',   arabic: 'العشاء', icon: 'moon'    },
+  ];
+  return map.map((p) => ({ ...p, time: (timings[p.api] || '').slice(0, 5) }));
+}
+
+function formatHijri(hijri) {
+  if (!hijri) return '';
+  const day = hijri.day;
+  const monthNum = parseInt(hijri.month.number || hijri.month, 10);
+  const monthName = HIJRI_MONTHS_MS[monthNum - 1] || hijri.month.en || '';
+  const year = hijri.year;
+  return `${day} ${monthName} ${year}H`;
+}
+
+// Cache prayer data in localStorage, keyed by YYYY-MM-DD
+function getPrayerCache(dateKey) {
+  try {
+    const raw = localStorage.getItem('prayer_' + dateKey);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function setPrayerCache(dateKey, data) {
+  try { localStorage.setItem('prayer_' + dateKey, JSON.stringify(data)); } catch {}
+}
+
+let PRAYERS = PRAYERS_FALLBACK;
+let HIJRI_DATE = '';
+
+// Fetch once on module load
+(function fetchPrayerData() {
+  const now = new Date();
+  // Use Singapore local date (UTC+8) for cache key
+  const sgDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Singapore' }).format(now); // YYYY-MM-DD
+  const dateKey = sgDate;
+  // Aladhan API expects DD-MM-YYYY
+  const [yr, mo, dy] = sgDate.split('-');
+  const apiDate = `${dy}-${mo}-${yr}`;
+  const cached = getPrayerCache(dateKey);
+  if (cached) {
+    PRAYERS = parsePrayerTimes(cached.timings);
+    HIJRI_DATE = formatHijri(cached.hijri);
+    return;
+  }
+  const url = `https://api.aladhan.com/v1/timingsByCity/${apiDate}?city=Singapore&country=Singapore&method=11`;
+  fetch(url)
+    .then((r) => r.ok ? r.json() : null)
+    .then((json) => {
+      if (!json || !json.data) return;
+      const timings = json.data.timings;
+      const hijri = json.data.date && json.data.date.hijri;
+      setPrayerCache(dateKey, { timings, hijri });
+      PRAYERS = parsePrayerTimes(timings);
+      HIJRI_DATE = formatHijri(hijri);
+      // Trigger re-render of PrayerWidget by dispatching custom event
+      window.dispatchEvent(new Event('prayer-data-ready'));
+    })
+    .catch(() => {
+      // Fallback: compute Hijri with Intl
+      try {
+        const hf = new Intl.DateTimeFormat('en-u-ca-islamic', { day: 'numeric', month: 'long', year: 'numeric' });
+        HIJRI_DATE = hf.format(now);
+      } catch {}
+    });
+})();
+
 function toMins(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
 function fmt12(t) {
+  if (!t) return '—';
   let [h, m] = t.split(':').map(Number);
   const ap = h >= 12 ? 'PM' : 'AM';
   h = h % 12 || 12;
@@ -214,12 +298,14 @@ function fmt12(t) {
 }
 function useNextPrayer() {
   const [now, setNow] = React.useState(new Date());
+  const [, forceUpdate] = React.useState(0);
   React.useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
+    const onReady = () => forceUpdate((n) => n + 1);
+    window.addEventListener('prayer-data-ready', onReady);
+    return () => { clearInterval(t); window.removeEventListener('prayer-data-ready', onReady); };
   }, []);
   const mins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
-  // Only the 5 obligatory prayers count as "next"
   const obligatory = PRAYERS.filter((p) => p.key !== 'syuruk');
   let next = obligatory.find((p) => toMins(p.time) > mins) || obligatory[0];
   let target = toMins(next.time) - mins;
@@ -231,21 +317,46 @@ function useNextPrayer() {
   const countdown = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   return { next, countdown, now };
 }
-const HIJRI_DATE = '9 Dzulhijjah 1447H';
 function gregorian(now) {
   return now.toLocaleDateString('en-SG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-/* ---------- Routing ---------- */
+/* ---------- Skeleton loader ---------- */
+function Skeleton({ width = '100%', height = 20, radius = 6, style = {} }) {
+  return (
+    <div style={{
+      width, height, borderRadius: radius,
+      background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+      backgroundSize: '200% 100%',
+      animation: 'skeleton-shimmer 1.4s infinite',
+      ...style,
+    }} />
+  );
+}
+function SkeletonCard() {
+  return (
+    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+      <Skeleton height={200} radius={0} />
+      <div style={{ padding: 20 }}>
+        <Skeleton height={12} width="40%" style={{ marginBottom: 12 }} />
+        <Skeleton height={18} style={{ marginBottom: 8 }} />
+        <Skeleton height={18} width="80%" style={{ marginBottom: 16 }} />
+        <Skeleton height={12} width="60%" />
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Routing — path-based with History API ---------- */
 function useRoute() {
-  const [route, setRoute] = React.useState(window.location.hash.slice(1) || '/');
+  const [route, setRoute] = React.useState(window.location.pathname || '/');
   React.useEffect(() => {
-    const onHash = () => {
-      setRoute(window.location.hash.slice(1) || '/');
+    const onPop = () => {
+      setRoute(window.location.pathname || '/');
       window.scrollTo({ top: 0, behavior: 'auto' });
     };
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
   }, []);
   return route;
 }
@@ -253,4 +364,5 @@ function useRoute() {
 Object.assign(window, {
   Icon, Img, Eyebrow, SectionHead, Btn, Breadcrumb, PageHero, Bilingual,
   Accordion, Field, PRAYERS, fmt12, useNextPrayer, useRoute, HIJRI_DATE, gregorian, toMins,
+  Skeleton, SkeletonCard,
 });

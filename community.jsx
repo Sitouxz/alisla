@@ -92,11 +92,11 @@ function SocialDevelopment() {
         <div className="container">
           <SectionHead center eyebrow="Two ways we serve" title="Programmes & Befrienders" />
           <div className="grid grid-2" style={{ marginTop: 40 }}>
-            <a className="card card-hover" href="#/community/programmes">
+            <a className="card card-hover" href="/community/programmes" onClick={(e) => navTo('/community/programmes', e)}>
               <div className="media-16x9"><Img id="sd-prog" ph="Community programmes" /></div>
               <div className="card-body"><h3 style={{ fontSize: 'var(--fs-h3)', marginBottom: 8 }}>Programmes</h3><p className="text-muted">Welfare, education and health initiatives that reach families across Punggol.</p></div>
             </a>
-            <a className="card card-hover" href="#/community/befrienders">
+            <a className="card card-hover" href="/community/befrienders" onClick={(e) => navTo('/community/befrienders', e)}>
               <div className="media-16x9"><Img id="sd-befr" ph="Befrienders programme" /></div>
               <div className="card-body"><h3 style={{ fontSize: 'var(--fs-h3)', marginBottom: 8 }}>Befrienders</h3><p className="text-muted">Trained volunteers offering friendship and a listening ear to isolated seniors.</p></div>
             </a>

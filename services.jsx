@@ -190,10 +190,24 @@ const Tahnik = () => <ServicePage
 />;
 
 /* ---------- Volunteer ---------- */
+// Replace VOLUNTEER_FORM_ID with your Formspree form ID
+const VOLUNTEER_FORM_ID = 'xpwzgkqn';
+
 function BeAVolunteer() {
   const [form, setForm] = React.useState({ name: '', email: '', phone: '', area: '', avail: '', why: '' });
-  const [sent, setSent] = React.useState(false);
+  const [status, setStatus] = React.useState('idle');
   const onCh = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const onSubmit = (e) => {
+    e.preventDefault();
+    setStatus('sending');
+    fetch(`https://formspree.io/f/${VOLUNTEER_FORM_ID}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(form),
+    })
+      .then((r) => r.ok ? setStatus('sent') : setStatus('error'))
+      .catch(() => setStatus('error'));
+  };
   const areas = [
     { ic: 'hand-helping', t: 'Welfare & Outreach', d: 'Pack and distribute aid, befriend seniors.' },
     { ic: 'book', t: 'Education', d: 'Assist in classes and learning programmes.' },
@@ -217,13 +231,18 @@ function BeAVolunteer() {
             ))}
           </div>
           <div className="card card-body" style={{ maxWidth: 720, margin: '0 auto', padding: 'clamp(28px,4vw,44px)' }}>
-            {sent ? (
+            {status === 'sent' ? (
               <div className="success-banner"><Icon name="check-circle" size={22} />Jazakallah khair for stepping forward! Our volunteer team will reach out about onboarding.</div>
             ) : (
               <React.Fragment>
                 <h3 style={{ fontSize: 'var(--fs-h3)', marginBottom: 6 }}>Sign up to volunteer</h3>
                 <p className="text-muted" style={{ fontSize: 'var(--fs-small)', marginBottom: 24 }}>Tell us a little about yourself and how you'd like to help.</p>
-                <form onSubmit={(e) => { e.preventDefault(); setSent(true); }}>
+                {status === 'error' && (
+                  <div style={{ background: 'var(--coral-100)', color: 'var(--coral)', borderRadius: 10, padding: '12px 16px', marginBottom: 18, fontSize: 'var(--fs-small)', display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <Icon name="x" size={16} />Something went wrong. Please email us at admin@alislah.sg.
+                  </div>
+                )}
+                <form onSubmit={onSubmit}>
                   <div className="form-grid">
                     <Field label="Full name" name="name" required value={form.name} onChange={onCh} placeholder="Your name" />
                     <Field label="Email" type="email" name="email" required value={form.email} onChange={onCh} placeholder="you@example.com" />
@@ -233,10 +252,75 @@ function BeAVolunteer() {
                     <Field label="During Ramadan?" type="select" name="ramadan" value={form.ramadan || ''} onChange={onCh} options={['Yes', 'No', 'Maybe']} placeholder="Available in Ramadan?" />
                     <Field full label="Why do you want to volunteer?" type="textarea" name="why" value={form.why} onChange={onCh} placeholder="Optional" />
                   </div>
-                  <div style={{ marginTop: 24 }}><Btn type="submit" icon="hand-helping">Sign me up</Btn></div>
+                  <div style={{ marginTop: 24 }}>
+                    <Btn type="submit" icon={status === 'sending' ? 'clock' : 'hand-helping'} disabled={status === 'sending'}>
+                      {status === 'sending' ? 'Submitting…' : 'Sign me up'}
+                    </Btn>
+                  </div>
                 </form>
               </React.Fragment>
             )}
+          </div>
+        </div>
+      </section>
+    </React.Fragment>
+  );
+}
+
+/* ---------- Volunteer Overview ---------- */
+const VOL_AREAS = [
+  { ic: 'heart', t: 'Welfare & Outreach', d: 'Assist our social development team in distributing food packs, visiting beneficiaries and supporting zakat programmes.', c: 'coral' },
+  { ic: 'book', t: 'Education & Classes', d: 'Support our asatizah with Quran classes, Islamic courses and youth programmes as a facilitator or admin aide.', c: 'mint' },
+  { ic: 'users', t: 'Events & Operations', d: 'Help plan and run Friday prayers, Ramadan iftar, Eid celebrations and community events at the mosque.', c: 'pink' },
+  { ic: 'globe', t: 'Media & Comms', d: 'Grow your photography, video or social media skills while helping document and share Al-Islah\'s programmes.', c: 'coral' },
+];
+
+function VolunteerOverview() {
+  return (
+    <React.Fragment>
+      <PageHero trail={[{ label: 'Volunteer' }]} eyebrow="Volunteer" tone="coral"
+        title="Serve with us" sub="Join 300+ volunteers who give their time, skills and hearts to serve the Al-Islah community — and grow through service." />
+      <section className="section">
+        <div className="container">
+          <div className="hero-grid" style={{ alignItems: 'center', gap: 48 }}>
+            <div className="arch"><div style={{ aspectRatio: '4/5' }}><Img id="vol-main" ph="Volunteers at Al-Islah" /></div></div>
+            <div>
+              <SectionHead eyebrow="Why Volunteer?" title="More than giving — it's a form of ibadah" />
+              <div className="prose lead" style={{ marginTop: 8 }}>
+                <p>Volunteering at a mosque is an act of worship. Every hour you give strengthens the ummah, builds community bonds and earns reward.</p>
+                <p>At Al-Islah, our volunteers are at the heart of every programme — from weekly classes to Ramadan operations. We invest in your growth as much as you invest in ours.</p>
+              </div>
+              <div className="stat-band" style={{ marginTop: 32 }}>
+                {[['300+', 'Active volunteers'], ['40+', 'Weekly programmes'], ['12+', 'Volunteer roles'], ['10', 'Years of service']].map(([n, l]) => (
+                  <div className="stat" key={l}><div className="num">{n}</div><div className="lbl">{l}</div></div>
+                ))}
+              </div>
+              <div style={{ marginTop: 32, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <Btn to="/volunteer/be-a-volunteer" icon="hand-helping">Sign up to volunteer</Btn>
+                <Btn to="/volunteer/events" variant="outline" iconRight="arrow-right">View upcoming events</Btn>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section className="section section-alt">
+        <div className="container">
+          <SectionHead center eyebrow="Volunteer Areas" title="Where you can serve" sub="Choose the area that matches your skills and passion. Training is provided for every role." />
+          <div className="grid grid-4" style={{ marginTop: 48 }}>
+            {VOL_AREAS.map((a) => (
+              <div key={a.t} className="card card-body" style={{ padding: 28 }}>
+                <div style={{ width: 52, height: 52, borderRadius: 14, display: 'grid', placeItems: 'center', marginBottom: 18,
+                  background: a.c === 'pink' ? 'var(--pink-100)' : a.c === 'mint' ? 'var(--mint-100)' : 'var(--coral-100)',
+                  color: a.c === 'pink' ? 'var(--pink-600)' : a.c === 'mint' ? 'var(--mint-600)' : 'var(--coral)' }}>
+                  <Icon name={a.ic} size={26} />
+                </div>
+                <h3 style={{ fontSize: 'var(--fs-h4)', marginBottom: 8 }}>{a.t}</h3>
+                <p style={{ fontSize: 'var(--fs-small)', color: 'var(--fg3)' }}>{a.d}</p>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 48, textAlign: 'center' }}>
+            <Btn to="/volunteer/be-a-volunteer" icon="hand-helping">Get started — sign up now</Btn>
           </div>
         </div>
       </section>
@@ -269,7 +353,7 @@ function VolunteeringEvents() {
                       <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="calendar" size={15} />{v.date}</span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="users" size={15} />{v.slots}</span>
                     </div>
-                    <a className="btn btn-outline btn-sm" href="#/volunteer/be-a-volunteer" style={{ alignSelf: 'flex-start' }}>Sign up</a>
+                    <a className="btn btn-outline btn-sm" href="/volunteer/be-a-volunteer" onClick={(e) => navTo('/volunteer/be-a-volunteer', e)} style={{ alignSelf: 'flex-start' }}>Sign up</a>
                   </div>
                 </div>
               </div>
@@ -478,6 +562,54 @@ const DONATION_CAMPAIGNS = [
   },
 ];
 
+function PayNowBlock({ uen, campaign }) {
+  const [copied, setCopied] = React.useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(uen).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+  };
+  return (
+    <div className="card card-body" style={{ background: 'var(--bg-alt)', border: 'none', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: '#b02b75', display: 'grid', placeItems: 'center' }}>
+          <Icon name="credit-card" size={16} style={{ color: '#fff' }} />
+        </div>
+        <span style={{ fontWeight: 'var(--fw-bold)', fontSize: 'var(--fs-body)' }}>Pay via PayNow</span>
+      </div>
+      {/* Steps */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+        {['Open your banking app and tap PayNow / Transfer.', 'Select "UEN" as the transfer type.', `Enter UEN below, set the amount, and add your name + "${campaign}" in remarks.`, 'Complete payment, then click Confirm below.'].map((s, i) => (
+          <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 'var(--fs-small)' }}>
+            <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: 'var(--coral-100)', color: 'var(--coral)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 12 }}>{i + 1}</span>
+            <span style={{ color: 'var(--fg2)', lineHeight: 1.5, paddingTop: 2 }}>{s}</span>
+          </div>
+        ))}
+      </div>
+      {/* UEN copy row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: '1.5px solid var(--border)', borderRadius: 'var(--r-md)', padding: '10px 14px' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--fg3)', marginBottom: 2 }}>PayNow UEN</div>
+          <div style={{ fontWeight: 'var(--fw-bold)', fontFamily: 'monospace', letterSpacing: 1, fontSize: 'var(--fs-body)' }}>{uen}</div>
+        </div>
+        <button onClick={copy} style={{ background: copied ? 'var(--mint-100)' : 'var(--coral-100)', color: copied ? 'var(--mint-600)' : 'var(--coral)', border: 'none', borderRadius: 'var(--r-sm)', padding: '6px 14px', cursor: 'pointer', fontSize: 'var(--fs-small)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          {copied ? '✓ Copied' : 'Copy UEN'}
+        </button>
+      </div>
+      {/* QR placeholder — replace src with actual PayNow QR PNG from mosque */}
+      <div style={{ marginTop: 14, textAlign: 'center' }}>
+        <div style={{ display: 'inline-block', padding: 10, border: '1.5px solid var(--border)', borderRadius: 10, background: '#fff' }}>
+          <img src="assets/images/paynow-qr.png" alt="PayNow QR code" width={130} height={130}
+            onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}
+            style={{ display: 'block', borderRadius: 4 }} />
+          <div style={{ display: 'none', width: 130, height: 130, alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 6, color: 'var(--fg3)', fontSize: 'var(--fs-caption)', textAlign: 'center' }}>
+            <Icon name="credit-card" size={28} />QR code<br />coming soon
+          </div>
+        </div>
+        <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--fg3)', marginTop: 6 }}>Scan with your banking app</div>
+      </div>
+    </div>
+  );
+}
+
 function Donations() {
   const [campaign, setCampaign] = React.useState('bih');
   const [amount, setAmount] = React.useState(null);
@@ -545,18 +677,7 @@ function Donations() {
                       style={{ width: '100%', padding: '10px 14px', border: '1.5px solid var(--border)', borderRadius: 'var(--r-md)', fontFamily: 'inherit' }} />
                   </div>
                 </div>
-                <div className="card card-body" style={{ background: 'var(--bg-alt)', border: 'none', marginBottom: 20 }}>
-                  <div style={{ fontWeight: 'var(--fw-semibold)', marginBottom: 6 }}>Pay via PayNow</div>
-                  <div style={{ fontSize: 'var(--fs-small)', color: 'var(--fg3)', lineHeight: 1.7 }}>
-                    Scan the QR code or use UEN: <strong>T13MQ0001J</strong><br />
-                    Include your name + "<strong>{camp.title}</strong>" in the remarks.<br />
-                    After payment, click confirm below.
-                  </div>
-                  {/* PayNow QR placeholder — replace with real QR image from mosque */}
-                  <div style={{ margin: '14px auto 0', width: 140, height: 140, background: 'var(--border)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-caption)', color: 'var(--fg3)', textAlign: 'center', padding: 8 }}>
-                    PayNow QR<br />UEN: T13MQ0001J
-                  </div>
-                </div>
+                <PayNowBlock uen="T13MQ0001J" campaign={camp.title} />
                 <Btn onClick={() => finalAmount > 0 && setSent(true)} size="lg" icon="heart">
                   Confirm donation · ${finalAmount || '—'}
                 </Btn>
@@ -595,7 +716,7 @@ function Login() {
     <section className="section">
       <div className="container" style={{ maxWidth: 460 }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <a className="brand" href="#/" style={{ justifyContent: 'center', marginBottom: 18 }}>
+          <a className="brand" href="/" onClick={(e) => navTo('/', e)} style={{ justifyContent: 'center', marginBottom: 18 }}>
             <span className="brand-mark">A</span>
             <span className="brand-text"><span className="brand-top">MASJID</span><span className="brand-bot">AL-ISLAH</span></span>
           </a>
@@ -607,7 +728,7 @@ function Login() {
             <div className={'tab' + (mode === 'login' ? ' active' : '')} onClick={() => setMode('login')}>Sign in</div>
             <div className={'tab' + (mode === 'register' ? ' active' : '')} onClick={() => setMode('register')}>Register</div>
           </div>
-          <form onSubmit={(e) => { e.preventDefault(); window.location.hash = '/'; }}>
+          <form onSubmit={(e) => { e.preventDefault(); navTo('/'); }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {mode === 'register' && <Field label="Full name" name="rname" placeholder="Your name" />}
               <Field label="Email" type="email" name="email" placeholder="you@example.com" />
@@ -616,10 +737,10 @@ function Login() {
               <Btn type="submit" size="lg">{mode === 'login' ? 'Sign in' : 'Create account'}</Btn>
             </div>
           </form>
-          {mode === 'login' && <div style={{ textAlign: 'center', marginTop: 16 }}><a href="#/login" style={{ color: 'var(--link)', fontSize: 'var(--fs-small)' }}>Forgot password?</a></div>}
+          {mode === 'login' && <div style={{ textAlign: 'center', marginTop: 16 }}><a href="/login" style={{ color: 'var(--link)', fontSize: 'var(--fs-small)' }}>Forgot password?</a></div>}
         </div>
         <p className="text-muted" style={{ textAlign: 'center', fontSize: 'var(--fs-small)', marginTop: 20 }}>
-          Need help? <a href="#/contact" style={{ color: 'var(--link)' }}>Contact the office</a>
+          Need help? <a href="/contact" onClick={(e) => navTo('/contact', e)} style={{ color: 'var(--link)' }}>Contact the office</a>
         </p>
       </div>
     </section>
@@ -627,10 +748,24 @@ function Login() {
 }
 
 /* ---------- Contact ---------- */
+// Replace FORMSPREE_ID with your Formspree form ID (e.g. xpwzgkqn)
+const FORMSPREE_ID = 'xpwzgkqn';
+
 function Contact() {
   const [form, setForm] = React.useState({ name: '', email: '', subject: '', msg: '' });
-  const [sent, setSent] = React.useState(false);
+  const [status, setStatus] = React.useState('idle'); // idle | sending | sent | error
   const onCh = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const onSubmit = (e) => {
+    e.preventDefault();
+    setStatus('sending');
+    fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(form),
+    })
+      .then((r) => r.ok ? setStatus('sent') : setStatus('error'))
+      .catch(() => setStatus('error'));
+  };
   return (
     <React.Fragment>
       <PageHero trail={[{ label: 'Contact' }]} eyebrow="Get in touch" title="Contact Al-Islah" sub="We'd love to hear from you. Visit us, call us, or send a message and we'll get back to you." />
@@ -655,18 +790,25 @@ function Contact() {
               </div>
             </div>
             <div className="card card-body" style={{ padding: 'clamp(28px,4vw,40px)' }}>
-              {sent ? (
+              {status === 'sent' ? (
                 <div className="success-banner"><Icon name="check-circle" size={22} />Thank you — your message has been sent. We'll reply soon, insha'Allah.</div>
               ) : (
                 <React.Fragment>
                   <h3 style={{ fontSize: 'var(--fs-h3)', marginBottom: 20 }}>Send a message</h3>
-                  <form onSubmit={(e) => { e.preventDefault(); setSent(true); }}>
+                  {status === 'error' && (
+                    <div style={{ background: 'var(--coral-100)', color: 'var(--coral)', borderRadius: 10, padding: '12px 16px', marginBottom: 18, fontSize: 'var(--fs-small)', display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <Icon name="x" size={16} />Something went wrong. Please email us directly at admin@alislah.sg.
+                    </div>
+                  )}
+                  <form onSubmit={onSubmit}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                       <Field label="Full name" name="name" required value={form.name} onChange={onCh} placeholder="Your name" />
                       <Field label="Email" type="email" name="email" required value={form.email} onChange={onCh} placeholder="you@example.com" />
                       <Field label="Subject" type="select" name="subject" value={form.subject} onChange={onCh} options={['General enquiry', 'Programmes & courses', 'Donations', 'Services (nikah, tahnik)', 'Volunteering', 'Feedback']} placeholder="What's this about?" />
                       <Field label="Message" type="textarea" name="msg" rows={5} required value={form.msg} onChange={onCh} placeholder="How can we help?" />
-                      <Btn type="submit" icon="arrow-right">Send message</Btn>
+                      <Btn type="submit" icon={status === 'sending' ? 'clock' : 'arrow-right'} disabled={status === 'sending'}>
+                        {status === 'sending' ? 'Sending…' : 'Send message'}
+                      </Btn>
                     </div>
                   </form>
                 </React.Fragment>
@@ -682,6 +824,7 @@ function Contact() {
 window.ROUTES = Object.assign(window.ROUTES || {}, {
   '/services/wedding': Wedding,
   '/services/tahnik': Tahnik,
+  '/volunteer': VolunteerOverview,
   '/volunteer/be-a-volunteer': BeAVolunteer,
   '/volunteer/events': VolunteeringEvents,
   '/payment': PaymentOverview,
