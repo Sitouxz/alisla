@@ -82,7 +82,7 @@ function About() {
 
           <div style={{ marginTop: 56 }}>
             <SectionHead center eyebrow="Core Values" eyebrowColor="mint" title="The values that guide us" />
-            <div className="grid" style={{ gridTemplateColumns: 'repeat(5,1fr)', marginTop: 40, gap: 16 }}>
+            <div className="grid values-grid" style={{ marginTop: 40, gap: 16 }}>
               {VALUES.map((v) => (
                 <div key={v.k} className="card card-body" style={{ padding: 24 }}>
                   <div style={{ fontWeight: 'var(--fw-bold)', letterSpacing: '.04em', color: 'var(--ink)', fontSize: 'var(--fs-small)', marginBottom: 10 }}>{v.k}</div>
