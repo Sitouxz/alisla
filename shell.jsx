@@ -74,37 +74,39 @@ function Header({ route }) {
   const enter = (i) => { clearTimeout(closeT.current); setOpenIdx(i); };
   const leave = () => { closeT.current = setTimeout(() => setOpenIdx(-1), 140); };
   return (
-    <header className="header">
-      <div className="container header-bar">
-        <Brand />
-        <nav className="nav">
-          {NAV.map((item, i) => (
-            <div key={item.label} className={'nav-item' + (openIdx === i ? ' open' : '')}
-              onMouseEnter={() => item.children && enter(i)} onMouseLeave={() => item.children && leave()}>
-              <a className={'nav-link' + (isActive(item) ? ' active' : '')}
-                href={item.to || (item.children && item.children[0].to) || '/'}
-                onClick={(e) => navTo(item.to || (item.children && item.children[0].to) || '/', e)}>
-                {item.label}
-                {item.children && <Icon name="chevron-down" size={13} className="caret" />}
-              </a>
-              {item.children && (
-                <div className="dropdown" onMouseEnter={() => enter(i)} onMouseLeave={leave}>
-                  {item.children.map((c) => (
-                    <a key={c.to} className={'dd-link' + (c.sub ? ' dd-sub' : '')} href={c.to} onClick={(e) => navTo(c.to, e)}>{c.label}</a>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </nav>
-        <div className="header-actions">
-          <a className="icon-btn desktop-only" href="/login" onClick={(e) => navTo('/login', e)} aria-label="Login"><Icon name="user" size={18} /></a>
-          <a className="btn btn-primary btn-sm desktop-only" href="/donations" onClick={(e) => navTo('/donations', e)}><Icon name="heart" size={16} className="ico" />Donate</a>
-          <button className="icon-btn burger" aria-label="Open menu" onClick={() => setMobile(true)}><Icon name="menu" size={20} /></button>
+    <>
+      <header className="header">
+        <div className="container header-bar">
+          <Brand />
+          <nav className="nav">
+            {NAV.map((item, i) => (
+              <div key={item.label} className={'nav-item' + (openIdx === i ? ' open' : '')}
+                onMouseEnter={() => item.children && enter(i)} onMouseLeave={() => item.children && leave()}>
+                <a className={'nav-link' + (isActive(item) ? ' active' : '')}
+                  href={item.to || (item.children && item.children[0].to) || '/'}
+                  onClick={(e) => navTo(item.to || (item.children && item.children[0].to) || '/', e)}>
+                  {item.label}
+                  {item.children && <Icon name="chevron-down" size={13} className="caret" />}
+                </a>
+                {item.children && (
+                  <div className="dropdown" onMouseEnter={() => enter(i)} onMouseLeave={leave}>
+                    {item.children.map((c) => (
+                      <a key={c.to} className={'dd-link' + (c.sub ? ' dd-sub' : '')} href={c.to} onClick={(e) => navTo(c.to, e)}>{c.label}</a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </nav>
+          <div className="header-actions">
+            <a className="icon-btn desktop-only" href="/login" onClick={(e) => navTo('/login', e)} aria-label="Login"><Icon name="user" size={18} /></a>
+            <a className="btn btn-primary btn-sm desktop-only" href="/donations" onClick={(e) => navTo('/donations', e)}><Icon name="heart" size={16} className="ico" />Donate</a>
+            <button className="icon-btn burger" aria-label="Open menu" onClick={() => setMobile(true)}><Icon name="menu" size={20} /></button>
+          </div>
         </div>
-      </div>
+      </header>
       <MobileDrawer open={mobile} onClose={() => setMobile(false)} route={route} />
-    </header>
+    </>
   );
 }
 
